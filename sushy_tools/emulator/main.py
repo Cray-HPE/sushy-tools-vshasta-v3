@@ -36,11 +36,14 @@ from sushy_tools.emulator.resources import managers as mgrdriver
 from sushy_tools.emulator.resources import storage as stgdriver
 from sushy_tools.emulator.resources.systems import fakedriver
 from sushy_tools.emulator.resources.systems import ironicdriver
-from sushy_tools.emulator.resources.systems import libvirtdriver
 from sushy_tools.emulator.resources.systems import novadriver
 from sushy_tools.emulator.resources import vmedia as vmddriver
 from sushy_tools.emulator.resources import volumes as voldriver
 from sushy_tools import error
+if os.environ.get("SUSHY_EMULATOR_LIBVIRT_BY_NAME") is None:
+    from sushy_tools.emulator.resources.systems import libvirtdriver
+else:
+    from sushy_tools.emulator.resources.systems import libvirtbynamedriver as libvirtdriver
 
 
 def _render_error(message):
