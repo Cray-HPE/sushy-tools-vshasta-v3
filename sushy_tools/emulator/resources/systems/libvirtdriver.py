@@ -25,6 +25,7 @@ from sushy_tools.emulator.resources.systems.base import AbstractSystemsDriver
 from sushy_tools import error
 
 try:
+    # pylint: disable=import-error
     import libvirt
 
 except ImportError:
@@ -44,11 +45,12 @@ FirmwareProcessResult = namedtuple('FirmwareProcessResult',
                                     'firmware_versions'])
 
 
-class libvirt_open(object):
+class libvirt_open:
 
     def __init__(self, uri, readonly=False):
         self._uri = uri
         self._readonly = readonly
+        self._conn = None
 
     def __enter__(self):
         try:
@@ -63,8 +65,10 @@ class libvirt_open(object):
                    '%(error)s' % {'uri': self._uri, 'error': e})
             raise error.FishyError(msg)
 
-    def __exit__(self, type, value, traceback):
-        self._conn.close()
+    def __exit__(self, type_arg, value, traceback):
+        if self._conn is not None:
+            self._conn.close()
+        self._conn = None
 
 
 class LibvirtDriver(AbstractSystemsDriver):
@@ -169,7 +173,8 @@ class LibvirtDriver(AbstractSystemsDriver):
 """
 
     @classmethod
-    def initialize(cls, config, logger, uri=None, *args, **kwargs):
+    def initialize(cls, config, logger, *args, **kwargs):
+        uri = kwargs.get('libvirt_uri')
         cls._config = config
         cls._logger = logger
 
@@ -531,7 +536,7 @@ class LibvirtDriver(AbstractSystemsDriver):
 
         os_element = tree.find('.//os')
 
-        return True if os_element.get('firmware') else False
+        return bool(os_element.get('firmware'))
 
     def get_boot_mode(self, identity):
         """Get computer system boot mode.
@@ -561,6 +566,9 @@ class LibvirtDriver(AbstractSystemsDriver):
             )
 
             return boot_mode
+        # XXX - is it right to return None here? It was implicitly being done
+        #       in the past...
+        return None
 
     def set_boot_mode(self, identity, boot_mode):
         """Set computer system boot mode.
@@ -600,11 +608,11 @@ class LibvirtDriver(AbstractSystemsDriver):
         try:
             loader_type = self.BOOT_MODE_MAP[boot_mode]
 
-        except KeyError:
+        except KeyError as err:
             msg = ('Unknown boot mode requested: '
                    '%(boot_mode)s' % {'boot_mode': boot_mode})
 
-            raise error.BadRequest(msg)
+            raise error.BadRequest(msg) from err
 
         os_elements = tree.findall('os')
         if len(os_elements) != 1:
@@ -740,8 +748,7 @@ class LibvirtDriver(AbstractSystemsDriver):
 
         if self._is_firmware_autoselection(tree):
             return self._get_secureboot_fw_auto_selection(identity, tree)
-        else:
-            return self._get_secureboot_fw_manual_selection(identity, tree)
+        return self._get_secureboot_fw_manual_selection(identity, tree)
 
     def _get_secureboot_fw_auto_selection(self, identity, tree):
         os_element = tree.find('os')
@@ -772,7 +779,7 @@ class LibvirtDriver(AbstractSystemsDriver):
 
         enabled = feature_secure_boot[0].get('enabled', "no")
 
-        return True if enabled == "yes" else False
+        return enabled == "yes"
 
     def _get_secureboot_fw_manual_selection(self, identity, tree):
         os_element = tree.find('os')
@@ -857,7 +864,7 @@ class LibvirtDriver(AbstractSystemsDriver):
 
     def _process_bios_attributes(self,
                                  domain_xml,
-                                 bios_attributes=DEFAULT_BIOS_ATTRIBUTES,
+                                 bios_attributes=None,
                                  update_existing_attributes=False):
         """Process Libvirt domain XML for BIOS attributes
 
@@ -892,6 +899,11 @@ class LibvirtDriver(AbstractSystemsDriver):
             attributes_written: if changes were made to XML,
             bios_attributes: dict of BIOS attributes
         """
+        bios_attributes = (
+            self.DEFAULT_BIOS_ATTRIBUTES
+            if bios_attributes is None
+            else bios_attributes
+        )
         namespace = 'http://openstack.org/xmlns/libvirt/sushy'
         ET.register_namespace('sushy', namespace)
         ns = {'sushy': namespace}
@@ -930,7 +942,7 @@ class LibvirtDriver(AbstractSystemsDriver):
     def _process_versions_attributes(
             self,
             domain_xml,
-            firmware_versions=DEFAULT_FIRMWARE_VERSIONS,
+            firmware_versions=None,
             update_existing_attributes=False):
         """Process Libvirt domain XML for firmware version attributes
 
@@ -970,6 +982,11 @@ class LibvirtDriver(AbstractSystemsDriver):
             attributes_written: if changes were made to XML,
             versions: dict of firmware versions
         """
+        firmware_versions = (
+            self.DEFAULT_FIRMWARE_VERSIONS
+            if firmware_versions is None
+            else firmware_versions
+        )
         namespace = 'http://openstack.org/xmlns/libvirt/sushy'
         ET.register_namespace('sushy', namespace)
         ns = {'sushy': namespace}
@@ -1006,7 +1023,7 @@ class LibvirtDriver(AbstractSystemsDriver):
                                      firmware_versions)
 
     def _process_bios(self, identity,
-                      bios_attributes=DEFAULT_BIOS_ATTRIBUTES,
+                      bios_attributes=None,
                       update_existing_attributes=False):
         """Process Libvirt domain XML for BIOS attributes
 
@@ -1022,7 +1039,11 @@ class LibvirtDriver(AbstractSystemsDriver):
 
         :raises: `error.FishyError` if BIOS attributes cannot be saved
         """
-
+        bios_attributes = (
+            self.DEFAULT_BIOS_ATTRIBUTES
+            if bios_attributes is None
+            else bios_attributes
+        )
         domain = self._get_domain(identity)
 
         result = self._process_bios_attributes(
@@ -1045,7 +1066,7 @@ class LibvirtDriver(AbstractSystemsDriver):
         return result.bios_attributes
 
     def _process_versions(self, identity,
-                          firmware_versions=DEFAULT_FIRMWARE_VERSIONS,
+                          firmware_versions=None,
                           update_existing_attributes=False):
         """Process Libvirt domain XML for firmware versions
 
@@ -1061,7 +1082,11 @@ class LibvirtDriver(AbstractSystemsDriver):
 
         :raises: `error.FishyError` if firmware versions cannot be saved
         """
-
+        firmware_versions = (
+            self.DEFAULT_FIRMWARE_VERSIONS
+            if firmware_versions is None
+            else firmware_versions
+        )
         domain = self._get_domain(identity)
 
         result = self._process_versions_attributes(
@@ -1303,12 +1328,13 @@ class LibvirtDriver(AbstractSystemsDriver):
         stream = conn.newStream()
         volume.upload(stream, 0, image_size)
 
+        # pylint: disable=unused-argument
         def read_file(stream, nbytes, fl):
             return fl.read(nbytes)
 
-        stream.sendAll(read_file, open(boot_image, 'rb'))
-
-        stream.finish()
+        with open(boot_image, 'rb') as image_file:
+            stream.sendAll(read_file, image_file)
+            stream.finish()
 
         return image_path
 
@@ -1346,16 +1372,16 @@ class LibvirtDriver(AbstractSystemsDriver):
             try:
                 lv_device = self.BOOT_DEVICE_MAP[device]
 
-            except KeyError:
+            except KeyError as err:
                 raise error.BadRequest(
-                    'Unknown device %s at %s' % (device, identity))
+                    'Unknown device %s at %s' % (device, identity)) from err
 
             disk_elements = device_element.findall('disk')
             for disk_element in disk_elements:
                 target_element = disk_element.find('target')
                 if target_element is None:
                     continue
-                elif target_element.attrib.get('bus') == 'scsi':
+                if target_element.attrib.get('bus') == 'scsi':
                     controller_type = 'scsi'
                 elif target_element.attrib.get('bus') == 'sata':
                     controller_type = 'sata'
@@ -1369,7 +1395,7 @@ class LibvirtDriver(AbstractSystemsDriver):
 
             # Enumerate existing disks to find a free unit on the bus
 
-            free_units = {i for i in range(100)}
+            free_units = set(range(100))
 
             disk_elements = device_element.findall('disk')
 
@@ -1433,9 +1459,9 @@ class LibvirtDriver(AbstractSystemsDriver):
         try:
             lv_device = self.BOOT_DEVICE_MAP[device]
 
-        except KeyError:
+        except KeyError as err:
             raise error.BadRequest(
-                'Unknown device %s at %s' % (device, identity))
+                'Unknown device %s at %s' % (device, identity)) from err
 
         device_element = domain_tree.find('devices')
         if device_element is None:
@@ -1511,7 +1537,7 @@ class LibvirtDriver(AbstractSystemsDriver):
                        {'path': vol_path, 'uri': self._uri,
                         'err': e})
                 self._logger.debug(msg)
-                return
+                return None
             disk_device = {
                 'Name': vol.name(),
                 'CapacityBytes': vol.info()[1]
@@ -1533,7 +1559,7 @@ class LibvirtDriver(AbstractSystemsDriver):
                        'libvirt URI "%(uri)s": %(err)s' %
                        {'name': pool_name, 'uri': self._uri, 'err': e})
                 self._logger.debug(msg)
-                return
+                return None
 
             try:
                 vol = pool.storageVolLookupByName(vol_name)
@@ -1544,7 +1570,7 @@ class LibvirtDriver(AbstractSystemsDriver):
                        {'name': vol_name, 'pName': pool_name,
                         'uri': self._uri, 'err': e})
                 self._logger.debug(msg)
-                return
+                return None
             disk_device = {
                 'Name': vol.name(),
                 'CapacityBytes': vol.info()[1]
@@ -1563,7 +1589,7 @@ class LibvirtDriver(AbstractSystemsDriver):
         """
         domain = self._get_domain(identity, readonly=True)
         tree = ET.fromstring(domain.XMLDesc(libvirt.VIR_DOMAIN_XML_INACTIVE))
-        simple_storage = defaultdict(lambda: defaultdict(DeviceList=list()))
+        simple_storage = defaultdict(lambda: defaultdict(DeviceList=[]))
 
         for disk_element in tree.findall(".//disk/target[@bus]/.."):
             source_element = disk_element.find('source')
@@ -1609,7 +1635,7 @@ class LibvirtDriver(AbstractSystemsDriver):
                        'libvirt URI "%(uri)s": %(err)s' %
                        {'name': poolName, 'uri': self._uri, 'err': ex})
                 self._logger.debug(msg)
-                return
+                return None
             try:
                 vol = pool.storageVolLookupByName(data['libvirtVolName'])
             except libvirt.libvirtError:
@@ -1627,7 +1653,7 @@ class LibvirtDriver(AbstractSystemsDriver):
                            'storage pool "%(pool)s"'
                            '' % {'pool': poolName})
                     self._logger.debug(msg)
-                    return
+                    return None
 
                 vol_path = os.path.join(
                     pool_path_element.text, data['libvirtVolName'])
@@ -1642,7 +1668,7 @@ class LibvirtDriver(AbstractSystemsDriver):
                     msg = ('Error creating "%s" storage volume in "%s" pool',
                            data['libvirtVolName'], poolName)
                     self._logger.debug(msg)
-                    return
+                    return None
             return data['Id']
 
     def get_http_boot_uri(self, identity):

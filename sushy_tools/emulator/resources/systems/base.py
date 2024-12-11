@@ -22,6 +22,7 @@ class AbstractSystemsDriver(metaclass=abc.ABCMeta):
     """Base class for all virtualization drivers"""
 
     @classmethod
+    # pylint: disable=unused-argument
     def initialize(cls, config, logger, *args, **kwargs):
         """Initialize class attribute."""
         cls._config = config

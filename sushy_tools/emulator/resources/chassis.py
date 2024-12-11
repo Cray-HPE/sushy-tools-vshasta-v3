@@ -65,13 +65,13 @@ class StaticDriver(base.DriverBase):
                 try:
                     uu_identity = self._chassis_by_id[identity]['UUID']
 
-                except KeyError:
+                except KeyError as err:
                     msg = ('Error finding chassis by UUID/Name/Id '
                            '"%(identity)s"' % {'identity': identity})
 
                     self._logger.debug(msg)
 
-                    raise error.FishyError(msg)
+                    raise error.FishyError(msg) from err
 
         raise error.AliasAccessError(uu_identity)
 

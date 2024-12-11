@@ -34,7 +34,7 @@ class EmulatorTestCase(base.BaseTestCase):
     def setUp(self):
         self.app = main.app.test_client()
 
-        super(EmulatorTestCase, self).setUp()
+        super().setUp()
 
     def set_feature_set(self, new_feature_set):
         main.app.config['SUSHY_EMULATOR_FEATURE_SET'] = new_feature_set
@@ -83,6 +83,7 @@ class AuthenticatedTestCase(base.BaseTestCase):
 
     def setUp(self):
         super().setUp()
+        # pylint: disable=consider-using-with
         self.auth_file = tempfile.NamedTemporaryFile()
         self.auth_file.write(TEST_PASSWD)
         self.auth_file.flush()
@@ -188,6 +189,7 @@ class ChassisTestCase(EmulatorTestCase):
 
     @patch_resource('indicators')
     @patch_resource('chassis')
+    # pylint: disable=unused-argument
     def test_chassis_indicator_set_fail(self, chassis_mock, indicators_mock):
         set_indicator_state = indicators_mock.return_value.set_indicator_state
         set_indicator_state.side_effect = error.FishyError
@@ -320,6 +322,7 @@ class SystemsTestCase(EmulatorTestCase):
     @patch_resource('chassis')
     @patch_resource('managers')
     @patch_resource('systems')
+    # pylint: disable=unused-argument
     def test_system_resource_get_reduced_feature_set(
             self, systems_mock, managers_mock, chassis_mock, indicators_mock):
         self.set_feature_set("vmedia")
@@ -358,6 +361,7 @@ class SystemsTestCase(EmulatorTestCase):
     @patch_resource('chassis')
     @patch_resource('managers')
     @patch_resource('systems')
+    # pylint: disable=unused-argument
     def test_system_resource_get_minimum_feature_set(
             self, systems_mock, managers_mock, chassis_mock, indicators_mock):
         self.set_feature_set("minimum")
@@ -439,6 +443,7 @@ class SystemsTestCase(EmulatorTestCase):
                                                     reset_type)
 
     @patch_resource('systems')
+    # pylint: disable=unused-argument
     def test_system_reset_action_fail(self, systems_mock):
         self.app.application.config['SUSHY_EMULATOR_DISABLE_POWER_OFF'] = True
         print(self.app.application.config)
@@ -465,6 +470,7 @@ class SystemsTestCase(EmulatorTestCase):
 
     @patch_resource('indicators')
     @patch_resource('systems')
+    # pylint: disable=unused-argument
     def test_system_indicator_set_fail(self, systems_mock, indicators_mock):
         set_indicator_state = indicators_mock.return_value.set_indicator_state
         set_indicator_state.side_effect = error.FishyError
@@ -475,6 +481,7 @@ class SystemsTestCase(EmulatorTestCase):
 
     @patch_resource('indicators')
     @patch_resource('systems')
+    # pylint: disable=unused-argument
     def test_system_indicator_reduced_feature_set(self, systems_mock,
                                                   indicators_mock):
         self.set_feature_set("vmedia")
@@ -781,6 +788,7 @@ class StorageTestCase(EmulatorTestCase):
         self.assertEqual(404, response.status_code)
 
     @patch_resource('storage')
+    # pylint: disable=unused-argument
     def test_storage_collection_resource(self, storage_mock, systems_mock):
         storage_mock.return_value.get_storage_col.return_value = [
             {
@@ -802,6 +810,7 @@ class StorageTestCase(EmulatorTestCase):
                          response.json['Members'][0])
 
     @patch_resource('storage')
+    # pylint: disable=unused-argument
     def test_storage_resource_get(self, storage_mock, systems_mock):
         storage_mock.return_value.get_storage_col.return_value = [
             {
@@ -827,6 +836,7 @@ class StorageTestCase(EmulatorTestCase):
         self.assertEqual(12, stg_ctl['SpeedGbps'])
 
     @patch_resource('drives')
+    # pylint: disable=unused-argument
     def test_drive_resource_get(self, drives_mock, systems_mock):
         drives_mock.return_value.get_drives.return_value = [
             {
@@ -868,6 +878,7 @@ class StorageTestCase(EmulatorTestCase):
                          response.json['Members'][0])
 
     @patch_resource('volumes')
+    # pylint: disable=unused-argument
     def test_create_volume_post(self, volumes_mock, systems_mock):
         systems_mock = systems_mock.return_value
         systems_mock.find_or_create_storage_volume.return_value = "13087010612"

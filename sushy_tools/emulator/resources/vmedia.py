@@ -81,10 +81,10 @@ class BaseDriver(base.DriverBase):
         try:
             return self._devices[(identity, device)]
 
-        except KeyError:
+        except KeyError as err:
             raise error.NotFound(
                 'No such virtual media device %s owned by resource '
-                '%s' % (device, identity))
+                '%s' % (device, identity)) from err
 
     @property
     def driver(self):

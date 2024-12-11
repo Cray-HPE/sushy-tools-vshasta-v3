@@ -38,14 +38,14 @@ class IronicDriverTestCase(base.BaseTestCase):
             del IronicDriver._cc
 
         test_driver_class = IronicDriver.initialize(
-            {}, mock.MagicMock(), 'fake-cloud')
+            {}, mock.MagicMock(), os_cloud='fake-cloud')
         self.test_driver = test_driver_class()
 
-        super(IronicDriverTestCase, self).setUp()
+        super().setUp()
 
     def tearDown(self):
         self.ironic_patcher.stop()
-        super(IronicDriverTestCase, self).tearDown()
+        super().tearDown()
 
     def test_uuid(self):
         uuid = self.test_driver.uuid(self.uuid)

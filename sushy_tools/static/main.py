@@ -31,6 +31,7 @@ class RequestHandler(http_server.BaseHTTPRequestHandler):
 
     REDFISH_SUBURI = '/redfish/v1'
 
+    # pylint: disable=unused-argument
     def _log_request(self, method):
         print(self.headers)
         content_length = int(self.headers.get('content-length', 0))
@@ -93,6 +94,7 @@ def parse_args():
 
 
 def main():
+    # pylint: disable=global-statement
     global REDFISH_MOCKUP_FILES
 
     args = parse_args()

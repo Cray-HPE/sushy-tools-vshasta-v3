@@ -35,15 +35,16 @@ class NovaDriverTestCase(base.BaseTestCase):
         self._cc = self.nova_mock.return_value
 
         test_driver_class = OpenStackDriver.initialize(
-            {}, mock.MagicMock(), 'fake-cloud')
+            {}, mock.MagicMock(), os_cloud='fake-cloud')
         self.test_driver = test_driver_class()
+        # pylint: disable=protected-access
         self.test_driver._futures.clear()
 
-        super(NovaDriverTestCase, self).setUp()
+        super().setUp()
 
     def tearDown(self):
         self.nova_patcher.stop()
-        super(NovaDriverTestCase, self).tearDown()
+        super().tearDown()
 
     def test_uuid(self):
         server = mock.Mock(id=self.uuid)
@@ -179,7 +180,7 @@ class NovaDriverTestCase(base.BaseTestCase):
         )
 
     def test_get_boot_mode(self):
-        server = mock.Mock(id=self.uuid, image=dict(id=self.uuid))
+        server = mock.Mock(id=self.uuid, image={"id": self.uuid})
         self.nova_mock.return_value.get_server.return_value = server
 
         image = mock.Mock(hw_firmware_type='bios')
@@ -191,7 +192,7 @@ class NovaDriverTestCase(base.BaseTestCase):
         self.assertEqual('Legacy', boot_mode)
 
     def test_get_boot_mode_no_image(self):
-        server = mock.Mock(id=self.uuid, image=dict(id=self.uuid))
+        server = mock.Mock(id=self.uuid, image={"id": self.uuid})
         self.nova_mock.return_value.get_server.return_value = server
 
         self.nova_mock.return_value.image.find_image.return_value = None
@@ -323,7 +324,7 @@ class NovaDriverTestCase(base.BaseTestCase):
             self.test_driver.get_simple_storage_collection, self.uuid)
 
     def test_get_secure_boot_off(self):
-        server = mock.Mock(id=self.uuid, image=dict(id=self.uuid))
+        server = mock.Mock(id=self.uuid, image={"id": self.uuid})
         self.nova_mock.return_value.get_server.return_value = server
 
         image = mock.Mock()
@@ -333,7 +334,7 @@ class NovaDriverTestCase(base.BaseTestCase):
         self.assertFalse(self.test_driver.get_secure_boot(self.uuid))
 
     def test_get_secure_boot_on(self):
-        server = mock.Mock(id=self.uuid, image=dict(id=self.uuid))
+        server = mock.Mock(id=self.uuid, image={"id": self.uuid})
         self.nova_mock.return_value.get_server.return_value = server
 
         image = mock.Mock(os_secure_boot='required')
@@ -395,7 +396,7 @@ class NovaDriverTestCase(base.BaseTestCase):
         queued_image = mock.Mock(id='aaa-bbb')
         self._cc.image.create_image.return_value = queued_image
 
-        image_id, image_name = self.test_driver.insert_image(
+        image_id, _ = self.test_driver.insert_image(
             self.uuid, 'http://fish.it/red.iso')
 
         self._cc.image.create_image.assert_called_once_with(
@@ -455,6 +456,7 @@ class NovaDriverTestCase(base.BaseTestCase):
         mock_get_boot_mode.return_value = None
         mock_future = mock.Mock()
         mock_future.running.return_value = True
+        # pylint: disable=protected-access
         self.test_driver._futures[self.uuid] = mock_future
         e = self.assertRaises(
             error.FishyError, self.test_driver.insert_image,
@@ -469,6 +471,7 @@ class NovaDriverTestCase(base.BaseTestCase):
         mock_future = mock.Mock()
         mock_future.running.return_value = False
         mock_future.exception.return_value = error.FishyError('ouch')
+        # pylint: disable=protected-access
         self.test_driver._futures[self.uuid] = mock_future
         e = self.assertRaises(
             error.FishyError, self.test_driver.insert_image,
@@ -514,6 +517,7 @@ class NovaDriverTestCase(base.BaseTestCase):
         # self._cc.delete_image.assert_not_called()
 
     @mock.patch.object(time, 'sleep', autospec=True)
+    # pylint: disable=unused-argument
     def test__rebuild_with_imported_image(self, mock_sleep):
         mock_server = mock.Mock()
         mock_server.name = 'node01'
@@ -534,6 +538,7 @@ class NovaDriverTestCase(base.BaseTestCase):
             mock.Mock(status='ACTIVE'),
         ]
 
+        # pylint: disable=protected-access
         self.test_driver._rebuild_with_imported_image(
             self.uuid, 'aaa-bbb')
 
@@ -541,6 +546,7 @@ class NovaDriverTestCase(base.BaseTestCase):
             self.uuid, 'aaa-bbb')
 
     @mock.patch.object(time, 'sleep', autospec=True)
+    # pylint: disable=unused-argument
     def test__rebuild_with_imported_imaged_error_image(self, mock_sleep):
         mock_server = mock.Mock()
         mock_server.name = 'node01'
@@ -552,12 +558,14 @@ class NovaDriverTestCase(base.BaseTestCase):
             mock.Mock(id='aaa-bbb', status='importing'),
             mock.Mock(id='aaa-bbb', status='error'),
         ]
+        # pylint: disable=protected-access
         e = self.assertRaises(
             error.FishyError, self.test_driver._rebuild_with_imported_image,
             self.uuid, 'aaa-bbb')
         self.assertEqual('Image import ended with status error', str(e))
 
     @mock.patch.object(time, 'sleep', autospec=True)
+    # pylint: disable=unused-argument
     def test__rebuild_with_imported_image_error_rebuild(self, mock_sleep):
         mock_server = mock.Mock()
         mock_server.name = 'node01'
@@ -576,6 +584,7 @@ class NovaDriverTestCase(base.BaseTestCase):
             mock.Mock(status='REBUILD'),
             mock.Mock(status='ERROR'),
         ]
+        # pylint: disable=protected-access
         e = self.assertRaises(
             error.FishyError, self.test_driver._rebuild_with_imported_image,
             self.uuid, 'aaa-bbb')

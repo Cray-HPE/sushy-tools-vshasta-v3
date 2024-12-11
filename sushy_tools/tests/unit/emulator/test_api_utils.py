@@ -21,6 +21,7 @@ class InstanceDeniedTestCase(test_main.EmulatorTestCase):
 
     def setUp(self):
         super().setUp()
+        # pylint: disable=unnecessary-dunder-call
         ctx = main.app.app_context().__enter__()
         self.addCleanup(lambda: ctx.__exit__(None, None, None))
 

@@ -19,6 +19,7 @@ from sushy_tools.tests.unit.emulator import test_main
 @test_main.patch_resource('managers')
 class CertificateServiceTestCase(test_main.EmulatorTestCase):
 
+    # pylint: disable=unused-argument
     def test_root(self, managers_mock, vmedia_mock):
         response = self.app.get('redfish/v1/CertificateService')
 

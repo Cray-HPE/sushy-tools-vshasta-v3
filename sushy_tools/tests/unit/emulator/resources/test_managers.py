@@ -24,7 +24,7 @@ from sushy_tools import error
 class FakeDriverTestCase(base.BaseTestCase):
 
     def setUp(self):
-        super(FakeDriverTestCase, self).setUp()
+        super().setUp()
         self.identity = 'xxx'
         self.systems = mock.Mock(systems=[self.identity])
         self.systems.uuid.return_value = 'xxx'

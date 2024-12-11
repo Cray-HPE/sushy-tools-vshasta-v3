@@ -52,6 +52,9 @@ class StaticDriver(base.DriverBase):
             msg = ('Error finding volume collection by System UUID %s '
                    'and Storage ID %s' % (uu_identity, storage_id))
             self._logger.debug(msg)
+        # XXX - this may be incorrect, there was no return here at all,
+        #       which is implicitly None, so this makes it explicit.
+        return None
 
     def add_volume(self, uu_identity, storage_id, vol):
         if not self._volumes[(uu_identity, storage_id)]:

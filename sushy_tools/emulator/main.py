@@ -67,8 +67,7 @@ class RedfishAuthMiddleware(auth_basic.BasicAuthMiddleware):
         path = env.get('PATH_INFO', '')
         if path.strip('/') in self._EXCLUDE_PATHS:
             return self.app(env, start_response)
-        else:
-            return super().__call__(env, start_response)
+        return super().__call__(env, start_response)
 
     def format_exception(self, e):
         response = super().format_exception(e)
@@ -84,6 +83,7 @@ class Application(flask.Flask):
         self.url_map.strict_slashes = False
         # This is needed for WSGI since it cannot process argv
         self.configure(config_file=os.environ.get('SUSHY_EMULATOR_CONFIG'))
+        self._cache = {}
 
         @self.before_request
         def reset_cache():
@@ -128,7 +128,7 @@ class Application(flask.Flask):
                 sys.exit(1)
 
             result = novadriver.OpenStackDriver.initialize(
-                self.config, self.logger, os_cloud)()
+                self.config, self.logger, os_cloud=os_cloud)()
 
         elif ironic_cloud:
             if not ironicdriver.is_loaded:
@@ -136,7 +136,7 @@ class Application(flask.Flask):
                 sys.exit(1)
 
             result = ironicdriver.IronicDriver.initialize(
-                self.config, self.logger, ironic_cloud)()
+                self.config, self.logger, os_cloud=ironic_cloud)()
 
         else:
             if not libvirtdriver.is_loaded:
@@ -146,7 +146,7 @@ class Application(flask.Flask):
             libvirt_uri = self.config.get('SUSHY_EMULATOR_LIBVIRT_URI', '')
 
             result = libvirtdriver.LibvirtDriver.initialize(
-                self.config, self.logger, libvirt_uri)()
+                self.config, self.logger, libvirt_uri=libvirt_uri)()
 
         self.logger.debug('Initialized system resource backed by %s driver',
                           result)
@@ -207,8 +207,7 @@ def all_exception_handler(message):
         return flask.redirect(url, code=307, Response=flask.Response)
 
     code = getattr(message, 'code', 500)
-    if (isinstance(message, error.FishyError)
-            or isinstance(message, wz_exc.HTTPException)):
+    if isinstance(message, (error.FishyError, wz_exc.HTTPException)):
         app.logger.debug(
             'Request failed with %s: %s', message.__class__.__name__, message)
     else:
@@ -256,13 +255,13 @@ def chassis_resource(identity):
         if uuid == chassis.chassis[0]:
             systems = app.systems.systems
             managers = app.managers.managers
-            storage = app.storage.get_all_storage()
+            all_storage = app.storage.get_all_storage()
             drives = app.drives.get_all_drives()
 
         else:
             systems = []
             managers = []
-            storage = []
+            all_storage = []
             drives = []
 
         return app.render_template(
@@ -276,11 +275,11 @@ def chassis_resource(identity):
             contained_chassis=[],
             managers=managers[:1],
             indicator_led=app.indicators.get_indicator_state(uuid),
-            storage=storage,
+            storage=all_storage,
             drives=drives
         )
 
-    elif flask.request.method == 'PATCH':
+    if flask.request.method == 'PATCH':
         indicator_led_state = flask.request.json.get('IndicatorLED')
         if not indicator_led_state:
             return 'PATCH only works for IndicatorLED element', 400
@@ -291,6 +290,8 @@ def chassis_resource(identity):
                         indicator_led_state, identity)
 
         return '', 204
+
+    return "Unrecognized method: '%s'" % flask.request.method, 500
 
 
 @app.route('/redfish/v1/Chassis/<identity>/Thermal', methods=['GET'])
@@ -456,7 +457,7 @@ def system_resource(identity):
             http_boot_uri=try_get(app.systems.get_http_boot_uri)
         )
 
-    elif flask.request.method == 'PATCH':
+    if flask.request.method == 'PATCH':
         boot = flask.request.json.get('Boot')
         indicator_led_state = flask.request.json.get('IndicatorLED')
         if not boot and not indicator_led_state:
@@ -476,6 +477,7 @@ def system_resource(identity):
                     # Download the image
                     image_path = app.vmedia.insert_image(
                         identity, 'Cd', http_uri)
+                # pylint: disable=broad-exception-caught
                 except Exception as e:
                     app.logger.error('Unable to insert image for HttpBootUri '
                                      'request processing. Error: %s', e)
@@ -488,6 +490,7 @@ def system_resource(identity):
                         write_protected=True)
                     # Set it for our emulator's API surface to return it
                     # if queried.
+                # pylint: disable=broad-exception-caught
                 except Exception as e:
                     app.logger.error('Unable to attach HttpBootUri for boot '
                                      'operation. Error: %s', e)
@@ -495,6 +498,7 @@ def system_resource(identity):
                              'bootdevice.'), 400)
                 try:
                     app.systems.set_http_boot_uri(http_uri)
+                # pylint: disable=broad-exception-caught
                 except Exception as e:
                     app.logger.error('Unable to record HttpBootUri for boot '
                                      'operation. Error: %s', e)
@@ -540,6 +544,8 @@ def system_resource(identity):
                             indicator_led_state, identity)
 
         return '', 204
+
+    return "Unrecognized method: '%s'" % flask.request.method, 500
 
 
 @app.route('/redfish/v1/Systems/<identity>/EthernetInterfaces',
@@ -636,14 +642,14 @@ def bios(identity):
     if app.feature_set != "full":
         raise error.FeatureNotAvailable("BIOS")
 
-    bios = app.systems.get_bios(identity)
+    my_bios = app.systems.get_bios(identity)
 
     app.logger.debug('Serving BIOS for system "%s"', identity)
 
     return app.render_template(
         'bios.json',
         identity=identity,
-        bios_current_attributes=json.dumps(bios, sort_keys=True, indent=6))
+        bios_current_attributes=json.dumps(my_bios, sort_keys=True, indent=6))
 
 
 @app.route('/redfish/v1/Systems/<identity>/BIOS/Settings',
@@ -655,16 +661,16 @@ def bios_settings(identity):
         raise error.FeatureNotAvailable("BIOS")
 
     if flask.request.method == 'GET':
-        bios = app.systems.get_bios(identity)
+        my_bios = app.systems.get_bios(identity)
 
         app.logger.debug('Serving BIOS Settings for system "%s"', identity)
 
         return app.render_template(
             'bios_settings.json',
             identity=identity,
-            bios_pending_attributes=json.dumps(bios, sort_keys=True, indent=6))
+            bios_pending_attributes=json.dumps(my_bios, sort_keys=True, indent=6))
 
-    elif flask.request.method == 'PATCH':
+    if flask.request.method == 'PATCH':
         attributes = flask.request.json.get('Attributes')
 
         app.systems.set_bios(identity, attributes)
@@ -672,6 +678,8 @@ def bios_settings(identity):
         app.logger.info('System "%s" BIOS attributes "%s" updated',
                         identity, attributes)
         return '', 204
+
+    return "Unrecognized method: '%s'" % flask.request.method, 500
 
 
 @app.route('/redfish/v1/Systems/<identity>/BIOS/Actions/Bios.ResetBios',
@@ -708,7 +716,7 @@ def secure_boot(identity):
             secure_boot_enable=secure,
             secure_boot_current_boot=secure and 'Enabled' or 'Disabled')
 
-    elif flask.request.method == 'PATCH':
+    if flask.request.method == 'PATCH':
         secure = flask.request.json.get('SecureBootEnable')
 
         app.systems.set_secure_boot(identity, secure)
@@ -716,6 +724,8 @@ def secure_boot(identity):
         app.logger.info('System "%s" secure boot updated to "%s"',
                         identity, secure)
         return '', 204
+
+    return "Unrecognized method: '%s'" % flask.request.method, 500
 
 
 @app.route('/redfish/v1/Systems/<identity>/SimpleStorage',
@@ -746,9 +756,9 @@ def simple_storage(identity, simple_storage_id):
         app.systems.get_simple_storage_collection(identity))
     try:
         storage_controller = simple_storage_controllers[simple_storage_id]
-    except KeyError:
+    except KeyError as err:
         app.logger.debug('"%s" Simple Storage resource was not found')
-        raise error.NotFound()
+        raise error.NotFound() from err
     return app.render_template('simple_storage.json', identity=identity,
                                simple_storage=storage_controller)
 
@@ -834,7 +844,7 @@ def volumes_collection(identity, storage_id):
             'volume_collection.json', identity=identity,
             storage_id=storage_id, volume_col=vol_ids)
 
-    elif flask.request.method == 'POST':
+    if flask.request.method == 'POST':
         data = {
             "Name": flask.request.json.get('Name'),
             "VolumeType": flask.request.json.get('VolumeType'),
@@ -851,6 +861,9 @@ def volumes_collection(identity, storage_id):
                        "Volumes/%s" % (identity, storage_id, new_id))
             return flask.Response(status=201,
                                   headers={'Location': vol_url})
+        return "could not find / create named volume '%s'" % data['Name'], 500
+
+    return "Unrecognized method: '%s'" % flask.request.method, 500
 
 
 @app.route('/redfish/v1/Systems/<identity>/Storage/<stg_id>/Volumes/<vol_id>',

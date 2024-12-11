@@ -84,8 +84,7 @@ def virtual_media_patch(identity, device):
         flask.current_app.vmedia.update_device_info(
             identity, device, verify=verify)
         return '', 204
-    else:
-        raise error.BadRequest("Empty or malformed patch")
+    raise error.BadRequest("Empty or malformed patch")
 
 
 @virtual_media.route('/<device>/Certificates', methods=['GET'])
@@ -143,8 +142,8 @@ def virtual_media_get_certificate(identity, device, cert_id):
     certificates = flask.current_app.vmedia.list_certificates(identity, device)
     try:
         cert = next(c for c in certificates if c.id == cert_id)
-    except StopIteration:
-        raise error.NotFound()
+    except StopIteration as err:
+        raise error.NotFound() from err
 
     return flask.render_template(
         'certificate.json',

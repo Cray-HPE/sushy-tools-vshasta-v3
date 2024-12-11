@@ -15,7 +15,7 @@ from unittest import mock
 import uuid
 import xml.etree.ElementTree as ET
 
-import libvirt
+import libvirt  # pylint: disable=import-error
 from oslotest import base
 
 from sushy_tools.emulator.resources.systems.libvirtdriver import LibvirtDriver
@@ -31,7 +31,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
         test_driver_class = LibvirtDriver.initialize(
             {}, mock.MagicMock())
         self.test_driver = test_driver_class()
-        super(LibvirtDriverTestCase, self).setUp()
+        super().setUp()
 
     @mock.patch('libvirt.open', autospec=True)
     def test__get_domain_by_name(self, libvirt_mock):
@@ -40,6 +40,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
         domain_mock = lookupByUUID_mock.return_value
         domain_mock.UUIDString.return_value = self.uuid
         self.assertRaises(
+            # pylint: disable=protected-access
             error.AliasAccessError, self.test_driver._get_domain, self.name)
 
     @mock.patch('libvirt.open', autospec=True)
@@ -48,6 +49,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
         conn_mock = libvirt_mock.return_value
         lookupByUUID_mock = conn_mock.lookupByUUID
+        # pylint: disable=protected-access
         self.test_driver._get_domain(str(domain_id))
         lookupByUUID_mock.assert_called_once_with(domain_id.bytes)
 
@@ -348,8 +350,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
         # check that os section does not have boot defined.
         # We find all os sections if any. Then count about of boot sections.
         # And the final summ should be 0
-        os_boot_amount = sum(
-            [len(ossec.findall('boot')) for ossec in newtree.findall('os')])
+        os_boot_amount = sum(len(ossec.findall('boot')) for ossec in newtree.findall('os'))
         self.assertEqual(0, os_boot_amount)
 
         # check that Network device has order=1
@@ -394,6 +395,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
         tree = ET.fromstring(domain)
 
+        # pylint: disable=protected-access
         fw_auto = self.test_driver._is_firmware_autoselection(tree)
 
         self.assertEqual(False, fw_auto)
@@ -405,6 +407,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
         tree = ET.fromstring(domain)
 
+        # pylint: disable=protected-access
         fw_auto = self.test_driver._is_firmware_autoselection(tree)
 
         self.assertEqual(True, fw_auto)
@@ -452,6 +455,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_mode(self, libvirt_mock, libvirt_rw_mock):
         with open('sushy_tools/tests/unit/emulator/domain.xml', 'r') as f:
             data = f.read()
@@ -469,6 +473,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_mode_auto_fw_uefi(self, libvirt_mock, libvirt_rw_mock):
         with open('sushy_tools/tests/unit/emulator/'
                   'domain_fw_auto.xml', 'r') as f:
@@ -495,6 +500,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_mode_auto_fw_legacy(self, libvirt_mock, libvirt_rw_mock):
         with open('sushy_tools/tests/unit/emulator/'
                   'domain-q35_fw_auto_uefi.xml', 'r') as f:
@@ -521,6 +527,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_mode_legacy(self, libvirt_mock, libvirt_rw_mock):
         with open('sushy_tools/tests/unit/emulator/domain-q35_uefi.xml',
                   'r') as f:
@@ -544,6 +551,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_mode_no_os(self, libvirt_mock, libvirt_rw_mock):
         with open('sushy_tools/tests/unit/emulator/domain.xml', 'r') as f:
             data = f.read()
@@ -566,6 +574,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_mode_many_loaders(self, libvirt_mock, libvirt_rw_mock):
         with open('sushy_tools/tests/unit/emulator/domain.xml', 'r') as f:
             data = f.read()
@@ -588,6 +597,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_mode_many_os(self, libvirt_mock, libvirt_rw_mock):
         with open('sushy_tools/tests/unit/emulator/domain.xml', 'r') as f:
             data = f.read()
@@ -629,6 +639,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
                 '.open')
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_image(self, libvirt_mock, libvirt_rw_mock,
                             open_mock, stat_mock):
         with open('sushy_tools/tests/unit/emulator/domain.xml', 'r') as f:
@@ -682,6 +693,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
                 '.open')
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_image_q35(self, libvirt_mock, libvirt_rw_mock,
                                 open_mock, stat_mock):
         with open('sushy_tools/tests/unit/emulator/domain-q35.xml', 'r') as f:
@@ -735,6 +747,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
                 '.open')
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_image_sata(self, libvirt_mock, libvirt_rw_mock,
                                  open_mock, stat_mock):
         with open('sushy_tools/tests/unit/emulator/domain-sata.xml', 'r') as f:
@@ -788,6 +801,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
                 '.open')
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    # pylint: disable=unused-argument
     def test_set_boot_image_scsi(self, libvirt_mock, libvirt_rw_mock,
                                  open_mock, stat_mock):
         with open('sushy_tools/tests/unit/emulator/domain-scsi.xml', 'r') as f:
@@ -853,6 +867,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
     @mock.patch(
         'sushy_tools.emulator.resources.systems.libvirtdriver.LibvirtDriver'
         '._remove_boot_images', new=mock.MagicMock())
+    # pylint: disable=unused-argument
     def test_set_boot_image_restore_boot_device(
             self, sbd_mock, gbd_mock, libvirt_mock, libvirt_rw_mock):
 
@@ -964,6 +979,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
         with open('sushy_tools/tests/unit/emulator/domain.xml') as f:
             domain_xml = f.read()
 
+        # pylint: disable=protected-access
         result = self.test_driver._process_bios_attributes(domain_xml)
         self.assertTrue(result.attributes_written)
         self.assertEqual(LibvirtDriver.DEFAULT_BIOS_ATTRIBUTES,
@@ -975,6 +991,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
                   'domain_metadata.xml') as f:
             domain_xml = f.read()
 
+        # pylint: disable=protected-access
         result = self.test_driver._process_bios_attributes(domain_xml)
         self.assertTrue(result.attributes_written)
         self.assertEqual(LibvirtDriver.DEFAULT_BIOS_ATTRIBUTES,
@@ -985,6 +1002,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
         with open('sushy_tools/tests/unit/emulator/domain_bios.xml') as f:
             domain_xml = f.read()
 
+        # pylint: disable=protected-access
         result = self.test_driver._process_bios_attributes(domain_xml)
         self.assertFalse(result.attributes_written)
         self.assertEqual({"BootMode": "Bios",
@@ -1003,6 +1021,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
     def test__process_bios_attributes_update(self):
         with open('sushy_tools/tests/unit/emulator/domain_bios.xml') as f:
             domain_xml = f.read()
+        # pylint: disable=protected-access
         result = self.test_driver._process_bios_attributes(
             domain_xml,
             {"BootMode": "Uefi",
@@ -1017,6 +1036,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
     def test__process_bios_attributes_update_non_string(self):
         with open('sushy_tools/tests/unit/emulator/domain_bios.xml') as f:
             domain_xml = f.read()
+        # pylint: disable=protected-access
         result = self.test_driver._process_bios_attributes(
             domain_xml,
             {"NumCores": 11},
@@ -1049,6 +1069,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
         conn_mock.defineXML.side_effect = libvirt.libvirtError(
             'because I can')
 
+        # pylint: disable=protected-access
         self.assertRaises(error.FishyError,
                           self.test_driver._process_bios,
                           'xxx-yyy-zzz',
@@ -1118,6 +1139,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
         with open('sushy_tools/tests/unit/emulator/domain.xml') as f:
             domain_xml = f.read()
 
+        # pylint: disable=protected-access
         result = self.test_driver._process_versions_attributes(domain_xml)
         self.assertTrue(result.attributes_written)
         self.assertEqual(LibvirtDriver.DEFAULT_FIRMWARE_VERSIONS,
@@ -1129,6 +1151,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
                   'domain_metadata.xml') as f:
             domain_xml = f.read()
 
+        # pylint: disable=protected-access
         result = self.test_driver._process_versions_attributes(domain_xml)
         self.assertTrue(result.attributes_written)
         self.assertEqual(LibvirtDriver.DEFAULT_FIRMWARE_VERSIONS,
@@ -1139,6 +1162,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
         with open('sushy_tools/tests/unit/emulator/domain_versions.xml') as f:
             domain_xml = f.read()
 
+        # pylint: disable=protected-access
         result = self.test_driver._process_versions_attributes(domain_xml)
         self.assertFalse(result.attributes_written)
         self.assertEqual({"BiosVersion": "1.0.0"},
@@ -1148,6 +1172,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
     def test__process_versions_attributes_update(self):
         with open('sushy_tools/tests/unit/emulator/domain_versions.xml') as f:
             domain_xml = f.read()
+        # pylint: disable=protected-access
         result = self.test_driver._process_versions_attributes(
             domain_xml,
             {"BiosVersion": "2.0.0"},
@@ -1160,6 +1185,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
     def test__process_versions_attributes_update_non_string(self):
         with open('sushy_tools/tests/unit/emulator/domain_versions.xml') as f:
             domain_xml = f.read()
+        # pylint: disable=protected-access
         result = self.test_driver._process_versions_attributes(
             domain_xml,
             {"BiosVersion": 42},
@@ -1180,10 +1206,11 @@ class LibvirtDriverTestCase(base.BaseTestCase):
         conn_mock.defineXML.side_effect = libvirt.libvirtError(
             'because I can')
 
+        # pylint: disable=protected-access
         self.assertRaises(error.FishyError,
                           self.test_driver._process_bios,
                           'xxx-yyy-zzz',
-                          {"BiosVersion" "1.0.0"})
+                          {"BiosVersion": "1.0.0"})
 
     @mock.patch('libvirt.openReadOnly', autospec=True)
     def test_get_nics(self, libvirt_mock):
@@ -1483,6 +1510,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    #pylint: disable=unused-argument
     def test_set_secure_boot_not_uefi(self, libvirt_mock, libvirt_rw_mock):
         with open('sushy_tools/tests/unit/emulator/domain-q35.xml', 'r') as f:
             data = f.read()
@@ -1496,6 +1524,7 @@ class LibvirtDriverTestCase(base.BaseTestCase):
 
     @mock.patch('libvirt.open', autospec=True)
     @mock.patch('libvirt.openReadOnly', autospec=True)
+    #pylint: disable=unused-argument
     def test_set_get_http_boot_uri(self, libvirt_mock, libvirt_rw_mock):
         with open('sushy_tools/tests/unit/emulator/domain-q35.xml', 'r') as f:
             data = f.read()

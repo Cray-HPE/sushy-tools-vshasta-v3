@@ -40,13 +40,13 @@ class StaticDriver(base.DriverBase):
 
             return self._storage[uu_identity]
 
-        except KeyError:
+        except KeyError as err:
             msg = ('Error finding storage collection by UUID '
                    '"%(identity)s"' % {'identity': identity})
 
             self._logger.debug(msg)
 
-            raise error.FishyError(msg)
+            raise error.FishyError(msg) from err
 
     def get_all_storage(self):
         """Returns all storage instances represented as tuples in the format:

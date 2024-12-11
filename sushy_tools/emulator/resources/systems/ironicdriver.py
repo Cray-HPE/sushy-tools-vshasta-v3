@@ -56,7 +56,12 @@ class IronicDriver(AbstractSystemsDriver):
     PERMANENT_CACHE = {}
 
     @classmethod
-    def initialize(cls, config, logger, os_cloud, *args, **kwargs):
+    def initialize(cls, config, logger, *args, **kwargs):
+        os_cloud = kwargs.get('os_cloud')
+        if os_cloud is None:
+            raise TypeError(
+                "'os_cloud' keywork argument required for ironic driver initialize()"
+            )
         cls._config = config
         cls._logger = logger
         cls._os_cloud = os_cloud
@@ -139,7 +144,7 @@ class IronicDriver(AbstractSystemsDriver):
             node = self._get_node(identity)
 
         except error.FishyError:
-            return
+            return None
 
         if node.power_state == self.IRONIC_POWER_ON:
             return 'On'
@@ -199,7 +204,7 @@ class IronicDriver(AbstractSystemsDriver):
             node = self._get_node(identity)
 
         except error.FishyError:
-            return
+            return None
 
         bdevice = node.get_boot_device(self._cc.baremetal).get("boot_device")
         return self.BOOT_DEVICE_MAP_REV.get(bdevice)
@@ -217,11 +222,11 @@ class IronicDriver(AbstractSystemsDriver):
         try:
             target = self.BOOT_DEVICE_MAP[boot_source]
 
-        except KeyError:
+        except KeyError as err:
             msg = ('Unknown power state requested: '
                    '%(boot_source)s' % {'boot_source': boot_source})
 
-            raise error.BadRequest(msg)
+            raise error.BadRequest(msg) from err
 
         self._cc.baremetal.set_node_boot_device(identity, target)
 
@@ -281,7 +286,7 @@ class IronicDriver(AbstractSystemsDriver):
             properties = self._get_properties(identity)
 
         except error.FishyError:
-            return
+            return None
 
         memory_mb = properties.get("memory_mb")
         if memory_mb is None:
@@ -299,7 +304,7 @@ class IronicDriver(AbstractSystemsDriver):
             properties = self._get_properties(identity)
 
         except error.FishyError:
-            return
+            return None
 
         cpus = properties.get("cpus")
         if cpus is None:

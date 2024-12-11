@@ -26,7 +26,7 @@ class MemoizeTestCase(base.BaseTestCase):
 
     def test_local_cache(self):
 
-        class Driver(object):
+        class Driver:
             call_count = 0
 
             @memoize.memoize()
@@ -57,7 +57,7 @@ class MemoizeTestCase(base.BaseTestCase):
 
         permanent_cache = {}
 
-        class Driver(object):
+        class Driver:
             call_count = 0
 
             @memoize.memoize(permanent_cache=permanent_cache)
@@ -93,11 +93,13 @@ class PersistentDictTestCase(base.BaseTestCase):
         pd.make_permanent('/', 'file')
         mock_sqlite3.assert_called_once_with('/file.sqlite')
 
+    # pylint: disable=unused-argument
     def test_encode(self, mock_sqlite3):
         pd = memoize.PersistentDict()
         value = pd.encode({1: '2'})
         self.assertEqual(pickle.dumps({1: '2'}), value)
 
+    # pylint: disable=unused-argument
     def test_decode(self, mock_sqlite3):
         pd = memoize.PersistentDict()
         value = pd.decode(pickle.dumps({1: '2'}))

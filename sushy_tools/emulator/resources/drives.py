@@ -40,13 +40,13 @@ class StaticDriver(base.DriverBase):
 
             return self._drives[(uu_identity, storage_id)]
 
-        except (ValueError, KeyError):
+        except (ValueError, KeyError) as err:
             msg = ('Error finding drive for System UUID "%s" and Storage ID '
                    '"%s"', identity, storage_id)
 
             self._logger.debug(msg)
 
-            raise error.FishyError(msg)
+            raise error.FishyError(msg) from err
 
     def get_all_drives(self):
         """Return all drives represented as tuples in the following format:
