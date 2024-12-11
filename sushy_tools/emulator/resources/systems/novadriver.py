@@ -59,7 +59,12 @@ class OpenStackDriver(AbstractSystemsDriver):
     PERMANENT_CACHE = {}
 
     @classmethod
-    def initialize(cls, config, logger, os_cloud, *args, **kwargs):
+    def initialize(cls, config, logger, *args, **kwargs):
+        os_cloud = kwargs.get('os_cloud')
+        if os_cloud is None:
+            raise TypeError(
+                "'os_cloud' keyword argument required for nova driver initialize()"
+            )
         cls._config = config
         cls._logger = logger
         cls._os_cloud = os_cloud
@@ -94,7 +99,7 @@ class OpenStackDriver(AbstractSystemsDriver):
     @memoize.memoize(permanent_cache=PERMANENT_CACHE)
     def _get_image_info(self, identity):
         if not identity:
-            return
+            return None
         return self._cc.image.find_image(identity)
 
     def _get_server_metadata(self, identity):
@@ -163,7 +168,7 @@ class OpenStackDriver(AbstractSystemsDriver):
             instance = self._get_instance(identity)
 
         except error.FishyError:
-            return
+            return None
 
         if instance.power_state == self.NOVA_POWER_STATE_ON:
             return 'On'
@@ -225,7 +230,7 @@ class OpenStackDriver(AbstractSystemsDriver):
             instance = self._get_instance(identity)
 
         except error.FishyError:
-            return
+            return None
 
         metadata = self._get_server_metadata(instance.id)
 
@@ -234,9 +239,7 @@ class OpenStackDriver(AbstractSystemsDriver):
 
         if metadata.get('libvirt:pxe-first'):
             return self.BOOT_DEVICE_MAP_REV['network']
-
-        else:
-            return self.BOOT_DEVICE_MAP_REV['hd']
+        return self.BOOT_DEVICE_MAP_REV['hd']
 
     def set_boot_device(self, identity, boot_source):
         """Set computer system boot device name
@@ -252,11 +255,11 @@ class OpenStackDriver(AbstractSystemsDriver):
         try:
             target = self.BOOT_DEVICE_MAP[boot_source]
 
-        except KeyError:
+        except KeyError as err:
             msg = ('Unknown power state requested: '
                    '%(boot_source)s' % {'boot_source': boot_source})
 
-            raise error.BadRequest(msg)
+            raise error.BadRequest(msg) from err
 
         # NOTE(etingof): the following probably only works with
         # libvirt-backed compute nodes
@@ -335,7 +338,7 @@ class OpenStackDriver(AbstractSystemsDriver):
             flavor = self._get_flavor(identity)
 
         except error.FishyError:
-            return
+            return None
 
         return int(math.ceil(flavor.ram / 1024.))
 
@@ -351,7 +354,7 @@ class OpenStackDriver(AbstractSystemsDriver):
             flavor = self._get_flavor(identity)
 
         except error.FishyError:
-            return
+            return None
 
         return flavor.vcpus
 
@@ -490,6 +493,7 @@ class OpenStackDriver(AbstractSystemsDriver):
         self._submit_future(False, self._eject_image, identity)
 
     def _eject_image(self, identity):
+        image_url = "<unknown image URL metadata for identity '%s'>" % identity
         try:
             # Assume that the inserted image wrote a new image to the volume,
             # so convert the volume to an image and rebuild with that image
@@ -556,20 +560,41 @@ class OpenStackDriver(AbstractSystemsDriver):
                 self._logger.debug('Deleting volume %(volume)s' %
                                    {'volume': volume})
                 self._cc.block_storage.delete_volume(volume)
-            except Exception:
-                pass
+            # Catching this is dangerous, so at least log it...
+            #
+            # pylint: disable=broad-exception-caught
+            except Exception as err:
+                self._logger.debug(
+                    "ignoring %s exception '%s' while "
+                    "deleting volume %s" %
+                    (str(type(err)), str(err), volume)
+                )
         if image:
             try:
                 self._logger.debug('Deleting image %(image)s' %
                                    {'image': image})
                 self._cc.delete_image(image)
-            except Exception:
-                pass
+            # Catching this is dangerous, so at least log it...
+            #
+            # pylint: disable=broad-exception-caught
+            except Exception as err:
+                self._logger.debug(
+                    "ignoring %s exception '%s' while deleting "
+                    "image %s" %
+                    (str(type(err)), str(err), image)
+                )
         if identity and metadata_keys:
             try:
                 self._cc.delete_server_metadata(identity, metadata_keys)
-            except Exception:
-                pass
+            # Catching this is dangerous, so at least log it...
+            #
+            # pylint: disable=broad-exception-caught
+            except Exception as err:
+                self._logger.debug(
+                    "Ignoring %s exception '%s' while deleting "
+                    "server metadata keys %s from '%s'" %
+                    (str(type(err)), str(err), metadata_keys, identity)
+                )
 
     def _submit_future(self, run_async, fn, identity, *args, **kwargs):
         future = self._futures.get(identity, None)
@@ -590,13 +615,14 @@ class OpenStackDriver(AbstractSystemsDriver):
         future = self._executor.submit(fn, identity, *args, **kwargs)
         self._futures[identity] = future
         if run_async:
-            return
+            return None
         ex = future.exception()
         if ex is not None:
             raise ex
         return future.result()
 
     def _rebuild_with_imported_image(self, identity, image_id):
+        image_url = "<unknown sushy-tools-image-url metadata for '%s'>" % identity
         try:
             image = self._cc.image.get_image(image_id)
             server = self._cc.compute.get_server(identity)
@@ -660,6 +686,8 @@ class OpenStackDriver(AbstractSystemsDriver):
                 image_id, None, identity, 'sushy-tools-image')
 
     def _rebuild_with_volume_image(self, identity):
+        # define image_url in case it gets used in the exception handler
+        image_url = "<unknown server metadata value for 'sushy-tools-image'>"
         try:
 
             server = self._cc.compute.get_server(identity)

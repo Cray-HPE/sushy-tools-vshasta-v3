@@ -14,7 +14,7 @@
 #    under the License.
 
 
-class DriverBase(object):
+class DriverBase:
     """Common base for Redfish Systems, Managers and Chassis models"""
 
     def __init__(self, config, logger):

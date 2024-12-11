@@ -35,6 +35,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
              '/redfish/v1/Systems/%s/VirtualMedia/Floppy' % self.uuid],
             [m['@odata.id'] for m in response.json['Members']])
 
+    # pylint: disable=unused-argument
     def test_virtual_media_collection_empty(self, systems_mock, vmedia_mock):
         vmedia_mock.return_value.get_devices.return_value = []
 
@@ -46,6 +47,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
         self.assertEqual(0, response.json['Members@odata.count'])
         self.assertEqual([], response.json['Members'])
 
+    # pylint: disable=unused-argument
     def test_virtual_media(self, systems_mock, vmedia_mock):
         vmedia_mock = vmedia_mock.return_value
         vmedia_mock.get_device_name.return_value = 'CD'
@@ -71,6 +73,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
             '/redfish/v1/Systems/%s/VirtualMedia/CD/Certificates' % self.uuid,
             response.json['Certificates']['@odata.id'])
 
+    # pylint: disable=unused-argument
     def test_virtual_media_with_auth(self, systems_mock, vmedia_mock):
         vmedia_mock = vmedia_mock.return_value
         vmedia_mock.get_device_name.return_value = 'CD'
@@ -94,6 +97,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
         self.assertEqual('******', response.json['Password'])
         self.assertFalse(response.json['VerifyCertificate'])
 
+    # pylint: disable=unused-argument
     def test_virtual_media_not_found(self, systems_mock, vmedia_mock):
         vmedia_mock.return_value.get_device_name.side_effect = error.NotFound
 
@@ -102,6 +106,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
 
         self.assertEqual(404, response.status_code)
 
+    # pylint: disable=unused-argument
     def test_virtual_media_update(self, systems_mock, vmedia_mock):
         response = self.app.patch(
             '/redfish/v1/Systems/%s/VirtualMedia/CD' % self.uuid,
@@ -112,6 +117,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
         vmedia_mock.update_device_info.assert_called_once_with(
             self.uuid, 'CD', verify=True)
 
+    # pylint: disable=unused-argument
     def test_virtual_media_update_not_found(self, systems_mock, vmedia_mock):
         vmedia_mock = vmedia_mock.return_value
         vmedia_mock.update_device_info.side_effect = error.NotFound
@@ -122,6 +128,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
 
         self.assertEqual(404, response.status_code)
 
+    # pylint: disable=unused-argument
     def test_virtual_media_update_invalid(self, systems_mock, vmedia_mock):
         response = self.app.patch(
             '/redfish/v1/Systems/%s/VirtualMedia/CD' % self.uuid,
@@ -129,6 +136,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
 
         self.assertEqual(400, response.status_code)
 
+    # pylint: disable=unused-argument
     def test_virtual_media_update_empty(self, systems_mock, vmedia_mock):
         response = self.app.patch(
             '/redfish/v1/Systems/%s/VirtualMedia/CD' % self.uuid,
@@ -136,6 +144,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
 
         self.assertEqual(400, response.status_code)
 
+    # pylint: disable=unused-argument
     def test_virtual_media_insert(self, systems_mock, vmedia_mock):
         response = self.app.post(
             '/redfish/v1/Systems/%s/VirtualMedia/CD/Actions/'
@@ -148,6 +157,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
             self.uuid, 'CD', 'http://fish.iso', True, True,
             username='', password='')
 
+    # pylint: disable=unused-argument
     def test_virtual_media_eject(self, systems_mock, vmedia_mock):
         response = self.app.post(
             '/redfish/v1/Systems/%s/VirtualMedia/CD/Actions/'
@@ -159,6 +169,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
         vmedia_mock.return_value.eject_image.assert_called_once_with(
             self.uuid, 'CD')
 
+    # pylint: disable=unused-argument
     def test_virtual_media_certificates(self, systems_mock, vmedia_mock):
         vmedia_mock.return_value.list_certificates.return_value = [
             vmedia.Certificate('1', 'PEM', 'abcd'),
@@ -176,6 +187,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
         self.assertEqual(['PEM'],
                          response.json['@Redfish.SupportedCertificates'])
 
+    # pylint: disable=unused-argument
     def test_virtual_media_certificates_system_not_found(self, systems_mock,
                                                          vmedia_mock):
         systems_mock.return_value.uuid.side_effect = error.NotFound
@@ -184,6 +196,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
 
         self.assertEqual(404, response.status_code, response.json)
 
+    # pylint: disable=unused-argument
     def test_virtual_media_add_certificate(self, systems_mock, vmedia_mock):
         vmedia_mock.return_value.add_certificate.return_value = \
             vmedia.Certificate('9', 'abcd', 'PEM')
@@ -197,6 +210,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
             f'/redfish/v1/Systems/{self.uuid}/VirtualMedia/CD/Certificates/9',
             response.headers['Location'])
 
+    # pylint: disable=unused-argument
     def test_virtual_media_add_certificate_no_string(self, systems_mock,
                                                      vmedia_mock):
         response = self.app.post(
@@ -205,6 +219,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
 
         self.assertEqual(400, response.status_code, response.data)
 
+    # pylint: disable=unused-argument
     def test_virtual_media_add_certificate_bad_type(self, systems_mock,
                                                     vmedia_mock):
         response = self.app.post(
@@ -213,6 +228,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
 
         self.assertEqual(400, response.status_code, response.data)
 
+    # pylint: disable=unused-argument
     def test_virtual_media_get_certificate(self, systems_mock, vmedia_mock):
         vmedia_mock.return_value.list_certificates.return_value = [
             vmedia.Certificate('1', 'abcd', 'PEM'),
@@ -227,6 +243,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
         self.assertEqual('dcba', response.json['CertificateString'])
         self.assertEqual('PEM', response.json['CertificateType'])
 
+    # pylint: disable=unused-argument
     def test_virtual_media_get_certificate_system_not_found(self,
                                                             systems_mock,
                                                             vmedia_mock):
@@ -236,6 +253,7 @@ class VirtualMediaTestCase(test_main.EmulatorTestCase):
 
         self.assertEqual(404, response.status_code, response.json)
 
+    # pylint: disable=unused-argument
     def test_virtual_media_delete_certificate(self, systems_mock,
                                               vmedia_mock):
         response = self.app.delete(

@@ -14,6 +14,8 @@ import functools
 
 import flask
 
+from sushy_tools import error as sushy_error # avoid collision with error() below
+
 
 def debug(*args, **kwargs):
     flask.current_app.logger.debug(*args, **kwargs)
@@ -45,14 +47,14 @@ def instance_denied(**kwargs):
         if deny:
             warning('Instance %s access denied', kwargs.get('identity'))
 
-        return deny
+    return deny
 
 
 def ensure_instance_access(decorated_func):
     @functools.wraps(decorated_func)
     def decorator(*args, **kwargs):
         if instance_denied(**kwargs):
-            raise error.NotFound()
+            raise sushy_error.NotFound()
 
         return decorated_func(*args, **kwargs)
 

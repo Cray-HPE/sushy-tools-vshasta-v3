@@ -81,10 +81,10 @@ class BaseDriver(base.DriverBase):
         try:
             return self._devices[(identity, device)]
 
-        except KeyError:
+        except KeyError as err:
             raise error.NotFound(
                 'No such virtual media device %s owned by resource '
-                '%s' % (device, identity))
+                '%s' % (device, identity)) from err
 
     @property
     def driver(self):
@@ -285,12 +285,20 @@ class StaticDriver(BaseDriver):
         auth = (username, password) if (username and password) else None
 
         if custom_cert is not None:
+            # XXX - Using 'with' here would make the logic below
+            #       complicated. A negative consequence here is that
+            #       we are potentially leaking a temporary file
+            #       here. For now, tell pylint to ignore this...
+            # pylint: disable=consider-using-with
             custom_cert_file = tempfile.NamedTemporaryFile(mode='wt')
             custom_cert_file.write(custom_cert)
             custom_cert_file.flush()
             verify_media_cert = custom_cert_file.name
 
         try:
+            # XXX - is this a problem? A missing timeout here could
+            #       lead to hangs...
+            # pylint: disable=missing-timeout
             with requests.get(image_url,
                               stream=True,
                               auth=auth,

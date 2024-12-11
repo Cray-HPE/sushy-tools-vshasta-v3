@@ -25,4 +25,5 @@ class TestCase(base.BaseTestCase):
 
     def setUp(self):
         super().setUp()
+        # pylint: disable=protected-access
         main.app._cache = {}

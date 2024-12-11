@@ -257,13 +257,16 @@ class StaticDriverTestCase(base.BaseTestCase):
         mock_rsp.status_code = 200
 
         ssl_conf_key = 'SUSHY_EMULATOR_VMEDIA_VERIFY_SSL'
+        # pylint: disable=protected-access
         default_ssl_verify = self.test_driver._config.get(ssl_conf_key)
         try:
+            # pylint: disable=protected-access
             self.test_driver._config[ssl_conf_key] = True
             local_file = self.test_driver.insert_image(
                 self.UUID, 'Cd', 'https://fish.it/red.iso', inserted=True,
                 write_protected=False)
         finally:
+            # pylint: disable=protected-access
             self.test_driver._config[ssl_conf_key] = default_ssl_verify
 
         self.assertEqual('/alphabet/soup/fish.iso', local_file)
@@ -367,6 +370,7 @@ class StaticDriverTestCase(base.BaseTestCase):
     @mock.patch.object(vmedia.os, 'rename', autospec=True)
     @mock.patch.object(vmedia, 'tempfile', autospec=True)
     @mock.patch.object(vmedia, 'requests', autospec=True)
+    # pylint: disable=unused-argument
     def test_insert_image_fail(self, mock_requests, mock_tempfile, mock_rename,
                                mock_open, mock_get_device):
         device_info = {}
@@ -545,6 +549,7 @@ class OpenstackDriverTestCase(base.BaseTestCase):
         mock_get_device.return_value = device_info
 
         ssl_conf_key = 'SUSHY_EMULATOR_VMEDIA_VERIFY_SSL'
+        # pylint: disable=protected-access
         self.test_driver._config[ssl_conf_key] = True
         self.assertRaises(
             error.NotSupportedError, self.test_driver.insert_image,

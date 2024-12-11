@@ -27,7 +27,7 @@ class FakeDriver(AbstractSystemsDriver):
     """Fake driver"""
 
     @classmethod
-    def initialize(cls, config, logger):
+    def initialize(cls, config, logger, *args, **kwargs):
         config.setdefault('SUSHY_EMULATOR_FAKE_SYSTEMS', [
             {
                 'uuid': DEFAULT_UUID,
@@ -78,13 +78,12 @@ class FakeDriver(AbstractSystemsDriver):
     def _get(self, identity):
         try:
             result = self._systems[identity]
-        except KeyError:
+        except KeyError as err:
             try:
                 uuid = self._by_name[identity]
-            except KeyError:
-                raise error.NotFound(f'Fake system {identity} was not found')
-            else:
-                raise error.AliasAccessError(uuid)
+            except KeyError as err2:
+                raise error.NotFound(f'Fake system {identity} was not found') from err2
+            raise error.AliasAccessError(uuid) from err
 
         # NOTE(dtantsur): since the state change can only be observed after
         # a _get() call, we can cheat a bit and update it on reading.
@@ -204,6 +203,9 @@ class FakeDriver(AbstractSystemsDriver):
         self._logger.info(
             'External notification to (%s): node %s power state changes',
             external_notification_url, system.get('name'))
+        # XXX - This could hang, but I am making pylint ignore that...
+        #
+        # pylint: disable=missing-timeout
         resp = requests.put(
             external_notification_url, verify=verify, cert=cert, json=system,
             headers={'Content-type': 'application/json'})

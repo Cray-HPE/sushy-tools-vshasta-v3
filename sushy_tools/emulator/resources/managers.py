@@ -31,20 +31,27 @@ class FakeDriver(base.DriverBase):
         try:
             system_uuid = self._systems.uuid(identity)
             system_name = self._systems.name(identity)
+        # XXX - except / raise does not appear to be needed
+        #       here. Could just allow the exception through
+        #       unmolested. Leaving it alone because it is fairly
+        #       harmless and I might be misunderstanding the
+        #       inheritance tree or something.
+        # pylint: disable=try-except-raise
         except error.AliasAccessError:
             raise
-        except error.NotFound:
+        except error.NotFound as err:
             # Re-raise hiding the fact that managers are backed by systems
             msg = 'Manager with UUID %s was not found' % identity
             self._logger.error(msg)
-            raise error.NotFound(msg)
-        else:
-            result = {'Id': system_uuid,
-                      'UUID': system_uuid,
-                      'Name': '%s-Manager' % system_name}
-            self._logger.debug('Found manager %(mgr)s by UUID %(id)s',
-                               {'mgr': result, 'id': identity})
-            return result
+            raise error.NotFound(msg) from err
+        result = {
+            'Id': system_uuid,
+            'UUID': system_uuid,
+            'Name': '%s-Manager' % system_name
+        }
+        self._logger.debug('Found manager %(mgr)s by UUID %(id)s',
+                           {'mgr': result, 'id': identity})
+        return result
 
     @property
     def driver(self):
@@ -78,8 +85,7 @@ class FakeDriver(base.DriverBase):
         """
         if manager['UUID'] == self.managers[0]:
             return self._chassis.chassis
-        else:
-            return []
+        return []
 
     def get_managers_for_system(self, ident):
         """Get managers that manage the given system.

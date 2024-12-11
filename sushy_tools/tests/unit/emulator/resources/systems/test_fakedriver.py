@@ -43,6 +43,7 @@ class FakeDriverTestCase(base.BaseTestCase):
         self.assertRaises(error.NotFound, self.test_driver.name, 'foo')
 
     @mock.patch('random.randint', autospec=True, return_value=0)
+    # pylint: disable=unused-argument
     def test_power_state(self, mock_rand):
         self.assertEqual('Off', self.test_driver.get_power_state(UUID))
         self.test_driver.set_power_state(UUID, 'On')
@@ -51,6 +52,7 @@ class FakeDriverTestCase(base.BaseTestCase):
         self.assertEqual('Off', self.test_driver.get_power_state(UUID))
 
     @mock.patch('random.randint', autospec=True, return_value=1000)
+    # pylint: disable=unused-argument
     def test_power_state_delay(self, mock_rand):
         self.assertEqual('Off', self.test_driver.get_power_state(UUID))
         self.test_driver.set_power_state(UUID, 'On')
@@ -62,6 +64,7 @@ class FakeDriverTestCase(base.BaseTestCase):
             self.assertEqual('On', self.test_driver.get_power_state(UUID))
 
     @mock.patch('random.randint', autospec=True, return_value=1000)
+    # pylint: disable=unused-argument
     def test_reboot_delay(self, mock_rand):
         self.cache[UUID]['power_state'] = 'On'
 

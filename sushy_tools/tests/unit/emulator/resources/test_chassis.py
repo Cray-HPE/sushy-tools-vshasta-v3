@@ -61,19 +61,22 @@ class StaticDriverTestCase(base.BaseTestCase):
 
         self.test_driver.managers = managers_mock
 
-        super(StaticDriverTestCase, self).setUp()
+        super().setUp()
 
     def test__get_chassis_by_id(self):
+        # pylint: disable=protected-access
         self.assertRaises(
             error.AliasAccessError, self.test_driver._get_chassis,
             self.identity)
 
     def test__get_chassis_by_name(self):
+        # pylint: disable=protected-access
         self.assertRaises(
             error.AliasAccessError, self.test_driver._get_chassis, self.name)
 
     def test__get_chassis_by_uuid(self):
         chassis_uuid = uuid.UUID(self.uuid)
+        # pylint: disable=protected-access
         chassis = self.test_driver._get_chassis(str(chassis_uuid))
         self.assertEqual(
             self.chassis[0], chassis)

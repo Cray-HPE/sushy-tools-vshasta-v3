@@ -48,6 +48,7 @@ def memoize(permanent_cache=None):
         def wrapped(self, *args, **kwargs):
             if permanent_cache is None:
                 try:
+                    # pylint: disable=protected-access
                     cache = self._cache
 
                 except AttributeError:
