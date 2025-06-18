@@ -40,6 +40,9 @@ from sushy_tools.emulator.resources.systems import novadriver
 from sushy_tools.emulator.resources import vmedia as vmddriver
 from sushy_tools.emulator.resources import volumes as voldriver
 from sushy_tools import error
+# The following has to be an environment variable (as opposed to a
+# config variable) because the configuration file has not yet been
+# loaded.
 if os.environ.get("SUSHY_EMULATOR_LIBVIRT_BY_NAME") is None:
     from sushy_tools.emulator.resources.systems import libvirtdriver
 else:
