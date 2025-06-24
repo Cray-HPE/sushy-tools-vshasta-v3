@@ -1,0 +1,15 @@
+{
+    "@odata.type": "#MemoryCollection.MemoryCollection",
+    "Name": "Memory Collection",
+    "Members@odata.count": 16,
+    "Members": [
+        {% for i in range(0, 16) %}
+        {
+            "@odata.id": {{ "/redfish/v1/Systems/%s/Memory/DIMM%s" |format(identity, i)|tojson }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ],
+    "@odata.context": "/redfish/v1/$metadata#MemoryCollection.MemoryCollection",
+    "@odata.id": {{ "/redfish/v1/Systems/%s/Memory"|format(identity)|tojson }},
+    "@Redfish.Copyright": "Copyright 2014-2020 DMTF. For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright"
+}

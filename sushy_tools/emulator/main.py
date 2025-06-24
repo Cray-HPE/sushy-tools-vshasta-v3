@@ -19,6 +19,9 @@ import json
 import os
 import ssl
 import sys
+import re
+import random
+import string
 
 import flask
 from werkzeug import exceptions as wz_exc
@@ -616,6 +619,37 @@ def processor(identity, processor_id):
         if proc['id'] == processor_id:
             return app.render_template(
                 'processor.json', identity=identity, processor=proc)
+
+    raise error.NotFound()
+
+@app.route('/redfish/v1/Systems/<identity>/Memory',
+           methods=['GET'])
+@api_utils.ensure_instance_access
+@api_utils.returns_json
+def memory_collection(identity):
+    if app.feature_set != "full":
+        raise error.FeatureNotAvailable("Memory")
+
+    return app.render_template(
+        'memory_collection.json', identity=identity)
+
+@app.route('/redfish/v1/Systems/<identity>/Memory/<dimm>',
+           methods=['GET'])
+@api_utils.ensure_instance_access
+@api_utils.returns_json
+def memory(identity, dimm):
+    if app.feature_set != "full":
+        raise error.FeatureNotAvailable("Processors")
+
+    match = re.match(r"DIMM(\d+)", dimm)
+    if match:
+        serial_number = "SUSHY" + ''.join(random.choice(string.digits) for _ in range(10))
+        dimm_number = int(match.group(1))
+        if dimm_number < 0 or dimm_number > 15:
+            raise error.NotFound()
+
+        return app.render_template(
+                'memory.json', identity=identity, dimm_number=dimm_number, serial_number=serial_number)
 
     raise error.NotFound()
 

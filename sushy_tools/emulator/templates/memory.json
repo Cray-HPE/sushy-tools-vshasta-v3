@@ -1,0 +1,24 @@
+{
+    "@odata.type": "#Memory.v1_5_0.Memory",
+    "Id": {{ "DIMM%d"|format(dimm_number)|tojson }},
+    "Name": {{ "DIMM %d"|format(dimm_number)|tojson }},
+    "@odata.etag": "W/\"1649099394\"",
+    "@odata.id": "{{ "/redfish/v1/Systems/%s/Memory/DIMM%d" |format(identity, dimm_number) }}",
+    "BaseModuleType": "RDIMM",
+    "BusWidthBits": 72,
+    "CapacityMiB": 16384,
+    "DataWidthBits": 64,
+    "ErrorCorrection": "Multi-bit ECC",
+    "Manufacturer": "Sushy",
+    "MemoryDeviceType": "DDR4",
+    "MemoryLocation": {
+        "Slot": {{ dimm_number % 2 }},
+        "Socket": {{ dimm_number // 2 }}
+    },
+    "MemoryType": "DRAM",
+    "OperatingSpeedMhz": 3200,
+    "PartNumber": "HMA82GR7CJR8N-XN",
+    "RankCount": 2,
+    "SerialNumber": "{{ serial_number }}",
+     "@Redfish.Copyright": "Copyright 2014-2019 DMTF. For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright"
+}

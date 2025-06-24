@@ -5,6 +5,7 @@
     "UUID": {{ uuid|string|tojson }},
     {%- if feature_set == "full" %}
     "Manufacturer": "Sushy Emulator",
+    "PartNumber": "Sushy-123",
     "Status": {
         "State": "Enabled",
         "Health": "OK",
